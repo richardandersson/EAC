@@ -102,15 +102,15 @@ results = []
 global f # matplotlib canvas to be tk-embedded.
 global a # matplotlib subplot
 global res
-res = 10
+#res = 10
 global overlapfunc
-overlapfunc = "Double-dipping"
+#overlapfunc = "Double-dipping"
 global binsize
-binsize = 100
+#binsize = 100
 global binfunc
-binfunc = "Mean"
+#binfunc = "Mean"
 global winsize
-winsize = 3000
+#winsize = 3000
 tierdefault = "select tier"
 eventdefault = "select tier event"
 onoffdefault = "select onset/offset"
@@ -124,23 +124,29 @@ IRRdata = {} # hash with filenames holding complete irr file data
 # load default values for variables
 def loadsettings(*args): # list of strings of settings we want to load
     returnvals = []
+    tempdict = {}
     try:
         with open('ETC_settings.ini') as x:
             vars = [line.strip() for line in x.readlines()]
-#            vars = [line.strip(['\s\n']) for line in x.readlines()]
-            tempdict = {}
             for var in vars: # extract all setting names and their values
                 i,j = var.split(':')
                 tempdict[i] = j
                 if j.isdigit(): # convert from string if it is a numeric value
                     tempdict[i] = int(j)
-        for arg in args: # get all values requested by the function arguments
-            returnvals.append(tempdict[arg])
-        returnvals = tuple(returnvals) # convert list to tuple to match the expected output form
-        return returnvals
-    except IOError: # if the file does not exist...
-        print("loadsettings() threw an IOError exception")
-        pass # return nothing and trigger an exception
+    except IOError: # if the file does not exist
+        print("No previous settings found - using default values")
+        tempdict['res'] = 10
+        tempdict['overlapfunc'] = 'Double-dipping'
+        tempdict['binsize'] = 100
+        tempdict['binfunc'] = 'Mean'
+        tempdict['winsize'] = 2000
+        
+    for arg in args: # get all values requested by the function arguments
+        returnvals.append(tempdict[arg])
+    returnvals = tuple(returnvals) # convert list to tuple to match the expected output form
+
+    return returnvals
+
 
 
 # enter time table information based info in elan file
@@ -784,11 +790,12 @@ def clearAll():
         results = []
         try: # try to load personal settings -- if there are any.
             res, overlapfunc, binsize, binfunc = loadsettings("res", "overlapfunc", "binsize", "binfunc")
-        except: # otherwise just use the default values.
-            res = 10
-            overlapfunc = "Double-dipping"
-            binsize = 100
-            binfunc = "Mean"
+        except IOError: # otherwise just use the default values.
+            raise
+#            res = 10
+#            overlapfunc = "Double-dipping"
+#            binsize = 100
+#            binfunc = "Mean"
         tdd11_var.set(tierdefault)
         tdd12_var.set(eventdefault)
         onoff1_var.set(onoffdefault)
