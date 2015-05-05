@@ -1,0 +1,8 @@
+Rater #2 FACE	Begin Time	End Time	Rater #1 FACE	Begin Time	End Time	Overlap	Total extent	Overlap / Total extent
+
+Face	9010	9723	Face	9010	9794	713	784	0.9094388
+Face	12499	12579	-	-	-	0	0	0.00
+Face	12739	12859	-	-	-	0	0	0.00
+
+Average agreement:								0.30314627
+Weighted overlap reliability:								0.90943877551
