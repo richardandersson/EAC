@@ -1,7 +1,8 @@
 #!/usr/bin/env python
 #-*- coding: utf-8 -*-
 
-myversion = 'v0.98' #
+myversion = 'v1.00' #
+# dev7 - sorted IRR calculation
 
 ## To do: ##
 # Vectorize overlap calculations? Slow if there is a lot of data. Remember to make reference plots before fiddling.
@@ -9,6 +10,9 @@ myversion = 'v0.98' #
 # Ability to save image if people can't be bothered to do a screenshot, or want higher resolution?
 
 #### CHANGES ####
+# v. 1.00 (2016-01-19)
+# - Updated to be compatible with newer versions of packages (Python 2.7.10, Matplotlib 1.4.3, Numpy 1.9.2).
+
 # v. 0.98 (2013-04-22)
 # - Changed all version numbers retroactively to better prepare for publication.
 # - minor adjustments and tweaks. 
@@ -57,11 +61,11 @@ myversion = 'v0.98' #
 # Tested under Windows 7 Ultimate 64, Ubuntu 10.04, 11.04 and 12:10.
 # The program authors do not claim responsibility for any damages caused by this software.
 # Use it on your own risk and make sure you have backed up the original files.
-# The program is published under a GNU GPL 2.0 license.
+# The program is published under GPL v3.
 # Attribute by citing the paper presenting this tool:
-# Andersson, R. & Sandgren, O. (In preparation). "ELAN Analysis Companion (EAC): A Software Tool for Time-course Analysis of ELAN-annotated Data".
+# Andersson, R. & Sandgren, O. (In preparation). "EAC - A Software Tool for Time-course Analysis of ELAN-annotated Data".
 #
-# Contact: richard[dot]andersson[AT]humlab[dot]lu[dot]se
+# Contact: richard[dot]andersson[AT]lucs[dot]lu[dot]se
 #
 # The code is not optimized in any way, and may be slow or consume large amounts of memory for
 # large data sets. At least, this increases the chance that future versions will be better...
@@ -79,9 +83,7 @@ import tkFileDialog
 import re
 import numpy
 import matplotlib.pyplot as plt
-#import matplotlib
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg #, NavigationToolbar2TkAgg
-from matplotlib.figure import Figure
 import math
 from datetime import datetime
 #import copy
@@ -102,15 +104,15 @@ results = []
 global f # matplotlib canvas to be tk-embedded.
 global a # matplotlib subplot
 global res
-#res = 10
+res = 10
 global overlapfunc
-#overlapfunc = "Double-dipping"
+overlapfunc = "Double-dipping"
 global binsize
-#binsize = 100
+binsize = 100
 global binfunc
-#binfunc = "Mean"
+binfunc = "Mean"
 global winsize
-#winsize = 3000
+winsize = 3000
 tierdefault = "select tier"
 eventdefault = "select tier event"
 onoffdefault = "select onset/offset"
@@ -124,29 +126,23 @@ IRRdata = {} # hash with filenames holding complete irr file data
 # load default values for variables
 def loadsettings(*args): # list of strings of settings we want to load
     returnvals = []
-    tempdict = {}
     try:
         with open('ETC_settings.ini') as x:
             vars = [line.strip() for line in x.readlines()]
+#            vars = [line.strip(['\s\n']) for line in x.readlines()]
+            tempdict = {}
             for var in vars: # extract all setting names and their values
                 i,j = var.split(':')
                 tempdict[i] = j
                 if j.isdigit(): # convert from string if it is a numeric value
                     tempdict[i] = int(j)
-    except IOError: # if the file does not exist
-        print("No previous settings found - using default values")
-        tempdict['res'] = 10
-        tempdict['overlapfunc'] = 'Double-dipping'
-        tempdict['binsize'] = 100
-        tempdict['binfunc'] = 'Mean'
-        tempdict['winsize'] = 2000
-        
-    for arg in args: # get all values requested by the function arguments
-        returnvals.append(tempdict[arg])
-    returnvals = tuple(returnvals) # convert list to tuple to match the expected output form
-
-    return returnvals
-
+        for arg in args: # get all values requested by the function arguments
+            returnvals.append(tempdict[arg])
+        returnvals = tuple(returnvals) # convert list to tuple to match the expected output form
+        return returnvals
+    except IOError: # if the file does not exist...
+        print("loadsettings() threw an IOError exception")
+        pass # return nothing and trigger an exception
 
 
 # enter time table information based info in elan file
@@ -790,12 +786,11 @@ def clearAll():
         results = []
         try: # try to load personal settings -- if there are any.
             res, overlapfunc, binsize, binfunc = loadsettings("res", "overlapfunc", "binsize", "binfunc")
-        except IOError: # otherwise just use the default values.
-            raise
-#            res = 10
-#            overlapfunc = "Double-dipping"
-#            binsize = 100
-#            binfunc = "Mean"
+        except: # otherwise just use the default values.
+            res = 10
+            overlapfunc = "Double-dipping"
+            binsize = 100
+            binfunc = "Mean"
         tdd11_var.set(tierdefault)
         tdd12_var.set(eventdefault)
         onoff1_var.set(onoffdefault)
@@ -865,17 +860,17 @@ def saveResults():
     
 def plotResults(plotresults):
     '''Plots results. Input is numpy array with one predictor per row (max 2)'''
+    #'''MatPlotLib has changes, so original development for 1.1.1 produces shifted tick locations'''.
     global a
-#    if plotresults == []
     a.clear() # important to not plot overlaid
     a.plot(numpy.transpose(plotresults)) # plot results over time
     wz = int(winvar.get()) # get analysis window size
-    majorloc = plt.MultipleLocator(int(round(wz/(4*binsize)))) # where to place ticks
+    majorloc = plt.MultipleLocator(int(round(wz/(4*binsize)))) # where to place ticks # 1.1.1 version
     wzl = range(0,int(wz*1.2), wz/4)
-    wzl2 = []
+    wzl2 = [''] # Need to pad with dummy value in newer versions of MatPlotLib to avoid shifted labels
     for w in wzl:
         wzl2.append(w-(int(wz/2))) # centering ticks (assuming symmetric analysis window)
-    majorformat = plt.FixedFormatter(wzl2) # plot using our month counter
+    majorformat = plt.FixedFormatter(wzl2) # prep fixed ticked labels
     a.xaxis.set_major_locator(majorloc) # adjust axis according to above
     a.xaxis.set_major_formatter(majorformat) # adjust axis according to above
     if min(plotresults.shape) > 1: # if more than one data plot # BAD CHECK - COULD BE WRITTEN BETTER
@@ -1097,7 +1092,7 @@ irrnewlabel.grid(row=4, column=1, padx=hpad, sticky="we") # sticky w
 
 
 ### GRAPH FRAME ###
-f = Figure(figsize=(8,3), dpi=98, facecolor=col_act) # matplotlib object
+f = plt.Figure(figsize=(8,3), dpi=98, facecolor=col_act) # matplotlib object
 a = f.add_subplot(1,1,1)
 #f.SubplotParams.update(left=0, right=0, bottom=0, top=0, wspace=0, hspace=0)
 graphframe = tk.Frame(master=root, borderwidth=0, relief="flat", width=w, height=300)
