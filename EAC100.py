@@ -141,7 +141,7 @@ def loadsettings(*args): # list of strings of settings we want to load
         returnvals = tuple(returnvals) # convert list to tuple to match the expected output form
         return returnvals
     except IOError: # if the file does not exist...
-        print("loadsettings() threw an IOError exception")
+        print("loadsettings() threw an IOError exception. Most likely the settings file does not exist.")
         pass # return nothing and trigger an exception
 
 
@@ -182,9 +182,11 @@ def nanmean(dat, dim):
     return maskedmean
 
 # initialize with NaNs
-def nans(shape, dtype=float):
+def nans(shape, dtype='float'):
     '''Initializing a numpy array of nan:s, given shape'''
-    a = numpy.empty(shape, dtype)
+    shape2 = [int(x) for x in shape]
+    shape2 = tuple(shape2)
+    a = numpy.empty(shape2, dtype)
     a.fill(numpy.nan)
     return a
 
@@ -1006,8 +1008,11 @@ def testingParams():
 try: # try to load personal settings -- if there are any.
     res, overlapfunc, binsize, binfunc, winsize = loadsettings("res", "overlapfunc", "binsize", "binfunc", "winsize")
 except: # otherwise just use the default values.
-    print("Loading settings threw an exception...")
-    raise
+	res = 10
+	overlapfunc = "Double-dipping"
+	binsize = 100
+	binfunc = "Mean"
+	winsize = 3000
 
 #print "Resolution is " + res
 #print "Overlapfunc is " + overlapfunc
