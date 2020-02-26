@@ -62,10 +62,7 @@ myversion = 'v1.00' #
 # The program authors do not claim responsibility for any damages caused by this software.
 # Use it on your own risk and make sure you have backed up the original files.
 # The program is published under GPL v3.
-# Attribute by citing the paper presenting this tool:
-# Andersson, R. & Sandgren, O. (In preparation). "EAC - A Software Tool for Time-course Analysis of ELAN-annotated Data".
-#
-# Contact: richard[dot]andersson[AT]lucs[dot]lu[dot]se
+# Attribute by citing the paper presenting this tool (found in GitHub repo).
 #
 # The code is not optimized in any way, and may be slow or consume large amounts of memory for
 # large data sets. At least, this increases the chance that future versions will be better...
@@ -160,7 +157,7 @@ def timetable(filename):
         timeslots[time_ids[i]] = int(time_points[i])
     ref2id = {}
     with open(filename) as x: f = x.read() # lets collect all alignable annotations with time points
-    pattern = re.compile('<ALIGNABLE_ANNOTATION ANNOTATION_ID="(\w+)" TIME_SLOT_REF1="(\w+)" TIME_SLOT_REF2="(\w+)">')
+    pattern = re.compile('<ALIGNABLE_ANNOTATION ANNOTATION_ID="(\w+)" .*TIME_SLOT_REF1="(\w+)" TIME_SLOT_REF2="(\w+)">')
     matches = re.findall(pattern, f)
     for a_match in matches:
         ref2id[a_match[0]] = [timeslots[a_match[1]], timeslots[a_match[2]]]
